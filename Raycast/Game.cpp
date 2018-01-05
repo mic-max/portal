@@ -79,6 +79,7 @@ void Game::handleEvents() {
 
 void Game::update() {
 	//std::cout << _count++ << std::endl;
+	map->update();
 }
 
 void Game::render() {

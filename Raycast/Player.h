@@ -8,7 +8,18 @@ public:
 	~Player();
 
 	void move(float dx, float dy);
+	void update();
 	int getSector();
+
+	float getX();
+	float getY();
+	float getZ();
+
+	float getAngle();
+	float getSin();
+	float getCos();
+
+	void setAngle(float angle);
 
 private: 
 	xyz _location;

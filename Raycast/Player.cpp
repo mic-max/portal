@@ -6,9 +6,12 @@
 Player::Player(xyz location, xyz velocity, float angle, int sector) {
 	_location = location;
 	_velocity = velocity;
-	_angle = angle;
-	_sector = sector;
 
+	_angle = angle;
+	_anglesin = sin(angle);
+	_anglecos = cos(angle);
+
+	_sector = sector;
 	// set location.z = sector->getFloor() + eye height
 }
 
@@ -39,6 +42,41 @@ void Player::move(float dx, float dy) {
 	_anglecos = cos(_angle);
 }
 
+void Player::update() {
+	//setAngle(_angle);
+	_location.x -= 0.1f;
+}
+
 int Player::getSector() {
 	return _sector;
+}
+
+float Player::getX() {
+	return _location.x;
+}
+
+float Player::getY() {
+	return _location.y;
+}
+
+float Player::getZ() {
+	return _location.z;
+}
+
+float Player::getAngle() {
+	return _angle;
+}
+
+float Player::getSin() {
+	return _anglesin;
+}
+
+float Player::getCos() {
+	return _anglecos;
+}
+
+void Player::setAngle(float angle) {
+	_angle = angle;
+	_anglesin = sin(angle);
+	_anglecos = cos(angle);
 }

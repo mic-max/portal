@@ -25,3 +25,11 @@ xy MapSector::getVertex(int index) {
 int MapSector::getNeighbour(int index) {
 	return _neighbours[index];
 }
+
+float MapSector::getFloor() {
+	return _floor;
+}
+
+float MapSector::getCeil() {
+	return _ceil;
+}

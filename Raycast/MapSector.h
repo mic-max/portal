@@ -14,6 +14,9 @@ public:
 	xy getVertex(int index);
 	int getNeighbour(int index);
 
+	float getFloor();
+	float getCeil();
+
 private:
 	float _floor, _ceil;
 	std::vector<xy> _vertices;

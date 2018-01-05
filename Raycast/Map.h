@@ -12,6 +12,7 @@ public:
 
 	void loadMap(const char* map);
 	void drawMap(int width, int height);
+	void update();
 
 private:
 	void verticalLine(int x, int y1, int y2, int top, int mid, int bot);
