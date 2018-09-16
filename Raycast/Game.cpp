@@ -1,12 +1,15 @@
 #include "Game.h"
 #include "Map.h"
 
-#include <iostream> // for testing
+#include "ECS/Components.h"
 
-Map* map;
+#include <iostream> // for testing
 
 SDL_Renderer* Game::_renderer = nullptr;
 SDL_Event Game::event;
+
+Map* map;
+Manager manager;
 
 Game::Game() {
 	_running = false;
@@ -14,7 +17,6 @@ Game::Game() {
 }
 
 Game::~Game() {
-
 }
 
 void Game::init(const char* title, int width, int height, bool fullscreen ) {
@@ -42,7 +44,8 @@ void Game::init(const char* title, int width, int height, bool fullscreen ) {
 	}
 
 	_running = true;
-	map = new Map();
+	auto& player(manager.addEntity()); // (2, 6) 0 angle, 0 sector
+	map = new Map(&player);
 }
 
 void Game::handleEvents() {
@@ -80,6 +83,7 @@ void Game::handleEvents() {
 void Game::update() {
 	//std::cout << _count++ << std::endl;
 	map->update();
+	manager.update();
 }
 
 void Game::render() {

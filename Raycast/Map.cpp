@@ -9,8 +9,13 @@
 #include <queue>
 #include <algorithm>
 
-Map::Map() {
+float hfov = 0.7 * 640;
+float vfov = 30;
+
+
+Map::Map(Entity* player) {
 	loadMap("map1.txt");
+	_player = player;
 }
 
 Map::~Map() {}
@@ -65,7 +70,8 @@ void Map::loadMap(const char* map) {
 			float angle;
 
 			in >> v.x >> v.y >> angle >> sector;
-			_player = new Player({v.x, v.y, 0}, {0, 0, 0}, angle, sector);
+			//_player = new Player({v.x, v.y, 0}, {0, 0, 0}, angle, sector);
+			_player->addComponent<PositionComponent>(v.x, v.y, angle, sector);
 			// std::cout << "Player: ( " << v.x << ", " << v.y << " ), Angle: " << angle << ", Sector #: " << sector << std::endl;
 		} else {
 			// std::cout << std::endl;
@@ -74,11 +80,7 @@ void Map::loadMap(const char* map) {
 
 	mapFile.close();
 }
-
-float clamp(float x, float low, float high) {
-	return std::min(std::max(x, low), high);
-}
-
+// TODO: move to Defs.h
 float vxs(float x0, float y0, float x1, float y1) {
 	return x0 * y1 - x1 * y0;
 }
@@ -92,8 +94,6 @@ xy intersect(float x1, float y1, float x2, float y2, float x3, float y3, float x
 
 void Map::drawMap(int W, int H) {
 	//std::queue<item> queue;
-	float hfov = 0.9f * H;
-	float vfov = 0.5f * H;
 
 	int* ytop = (int*) calloc(W, sizeof(int));
 	int* ybot = (int*) calloc(W, sizeof(int));
@@ -101,19 +101,20 @@ void Map::drawMap(int W, int H) {
 	for (int i = 0; i < W; i++)
 		ybot[i] = H - 1;
 
-	item now = {_player->getSector(), 0, W - 1};
+	PositionComponent* pos = &_player->getComponent<PositionComponent>();
+	item now = {pos->getSector(), 0, W - 1};
 
 	MapSector* sect = _sectors[now.sectorNum];
 
 	for (int s = 0; s < sect->numVertices(); s++) {
-		float vx1 = sect->getVertex(s + 0).x - _player->getX();
-		float vy1 = sect->getVertex(s + 0).y - _player->getY();
+		float vx1 = sect->getVertex(s + 0).x - pos->getX();
+		float vy1 = sect->getVertex(s + 0).y - pos->getY();
 
-		float vx2 = sect->getVertex((s + 1) % sect->numVertices()).x - _player->getX();
-		float vy2 = sect->getVertex((s + 1) % sect->numVertices()).y - _player->getY();
+		float vx2 = sect->getVertex((s + 1) % sect->numVertices()).x - pos->getX();
+		float vy2 = sect->getVertex((s + 1) % sect->numVertices()).y - pos->getY();
 
-		float pcos = _player->getCos();
-		float psin = _player->getSin();
+		float pcos = cos(pos->getAngle());
+		float psin = sin(pos->getAngle());
 
 		float tx1 = vx1 * psin - vy1 * pcos;
 		float tz1 = vx1 * pcos + vy1 * psin;
@@ -164,15 +165,27 @@ void Map::drawMap(int W, int H) {
 		if (x1 >= x2 || x2 < now.startx || x1 > now.endx)
 			continue;
 
-		float yceil = sect->getCeil() - _player->getZ();
-		float yfloor = sect->getFloor() - _player->getZ();
+		float yceil = sect->getCeil() - pos->getZ();
+		float yfloor = sect->getFloor() - pos->getZ();
 
 		int neighbour = sect->getNeighbour(s);
+		float nyceil = 0;
+		float nyfloor = 0;
+
+		if (neighbour >= 0) {
+			nyceil = _sectors[neighbour]->getCeil() - pos->getZ();
+			nyfloor = _sectors[neighbour]->getFloor() - pos->getZ();
+		}
 
 		int y1a = H / 2 - (int) (yceil * yscale1);
 		int y1b = H / 2 - (int) (yfloor * yscale1);
 		int y2a = H / 2 - (int) (yceil * yscale2);
 		int y2b = H / 2 - (int) (yfloor * yscale2);
+
+		int ny1a = H / 2 - (int) (nyceil * yscale1);
+		int ny1b = H / 2 - (int) (nyfloor * yscale1);
+		int ny2a = H / 2 - (int) (nyceil * yscale2);
+		int ny2b = H / 2 - (int) (nyfloor * yscale2);
 
 		int startx = std::max(x1, now.startx);
 		int endx = std::min(x2, now.endx);
@@ -187,7 +200,18 @@ void Map::drawMap(int W, int H) {
 			verticalLine(x, cyb + 1, ybot[x], 0x0000FF, 0x0000AA, 0x0000FF); // blue
 
 			if (neighbour >= 0) {
-				verticalLine(x, cya, cyb, 0xAA0000, 0xAA0000, 0xAA0000); // red
+				int nya = (x - x1) * (ny2a - ny1a) / (x2 - x1) + ny1a;
+				int cnya = clamp(nya, ytop[x], ybot[x]);
+				int nyb = (x - x1) * (ny2b - ny1b) / (x2 - x1) + ny1b;
+				int cnyb = clamp(nyb, ytop[x], ybot[x]);
+
+				verticalLine(x, cya, cnya - 1, 0, x == x1 || x == x2 ? 0 : 0xAAAAAA, 0); // black or light grey
+				ytop[x] = clamp(std::max(cya, cnya), ytop[x], H - 1);
+
+				verticalLine(x, cnyb + 1, cyb, 0, x == x1 || x == x2 ? 0 : 0x7C00D9, 0); // pink
+				ybot[x] = clamp(std::min(cyb, cnyb), 0, ybot[x]);
+
+				verticalLine(x, ytop[x], ybot[x], 0x00AA00, 0x00AA00, 0xAA0000); // green
 			} else {
 				verticalLine(x, cya, cyb, 0, x == x1 || x == x2 ? 0 : 0xAAAAAA, 0); // black or light grey
 			}
@@ -200,6 +224,8 @@ void Map::drawMap(int W, int H) {
 
 void Map::update() {
 	_player->update();
+	PositionComponent* pos = &_player->getComponent<PositionComponent>();
+	std::cout << pos->getX() << ", " << pos->getY() << std::endl;
 }
 
 void rgbChannels(int rgb, int& r, int& g, int& b) {

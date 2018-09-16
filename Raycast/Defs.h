@@ -17,11 +17,12 @@ struct item {
 };
 
 // Math Functions
-/*
-float clamp(float x, float low, float high) {
+
+template<typename T>
+T clamp(T x, T low, T high) {
 	return std::min(std::max(x, low), high);
 }
-
+/*
 float vxs(float x0, float y0, float x1, float y1) {
 	return x0 * y1 - x1 * y0;
 }

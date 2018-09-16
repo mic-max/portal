@@ -2,12 +2,12 @@
 
 // #include "Game.h" // temp for sdl rect
 #include "MapSector.h"
-#include "Player.h"
 #include <vector>
+#include "ECS\Components.h"
 
 class Map {
 public:
-	Map();
+	Map(Entity* player);
 	~Map();
 
 	void loadMap(const char* map);
@@ -19,5 +19,5 @@ private:
 	// SDL_Rect src, dest;
 
 	std::vector<MapSector*> _sectors;
-	Player* _player;
+	Entity* _player;
 };
